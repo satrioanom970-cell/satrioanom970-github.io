@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wedding of Ila & Bentar</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400;0,600;1,400&family=Poppins:wght=300;400;500;600&family=Great+Vibes&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        html, body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0b0c10;
+            color: #ffffff;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Lock Scroll sebelum undangan dibuka */
+        body.is-locked {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ====== CANVAS KELOPAK BUNGA ====== */
+        #petal-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ====== AUDIO BACKSOUND CONTROL ====== */
+        .audio-container {
+            position: fixed;
+            bottom: 25px;
+            left: 25px;
+            z-index: 9999;
+            display: none;
+        }
+        .audio-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            animation: pulse 2s infinite;
+            font-size: 18px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); box-shadow: 0 4px 20px rgba(243, 207, 122, 0.4); }
+            100% { transform: scale(1); }
+        }
+
+        /* ====== COVER SAMPUL DEPAN (FULLSCREEN LAYER) ====== */
+        .wedding-cover {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(0, 0, 0, 0.185), rgba(0,0,0,0.8)),
+            url("https://i.ibb.co.com/60F9ffn6/4.jpg") center/cover no-repeat;
+            transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1), opacity 1.2s ease;
+            text-align: center;
+            padding: 20px;
+        }
+        .wedding-cover.opened {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ====== GENERAL SECTIONS ====== */
+        section {
+            min-height: 100vh;
+            padding: 80px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-attachment: fixed;
+            z-index: 2;
+        }
+
+        /* Background default seksi dalam */
+        .section-bg {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(rgba(11, 12, 16, 0.096), rgba(11, 12, 16, 0.92)),
+            url("https://i.ibb.co.com/60F9ffn6/4.jpg") center/cover no-repeat;
+        }
+
+        /* Container kaca elegan (Glassmorphism) */
+        .glass-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+
+        /* ====== TYPOGRAPHY & DESIGN ====== */
+        h1 { 
+            font-family: 'Great Vibes', cursive;
+            color: #f7f310; /* Warna Emas Mewah */
+            font-size: 72px; 
+            font-weight: 400;
+            margin: 5px 0 15px 0; 
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+            letter-spacing: 2px;
+        }
+
+        h2 { 
+            font-family: 'Cinzel', serif;
+            color: #f3cf7a; 
+            font-size: 32px; 
+            font-weight: 400;
+            letter-spacing: 4px;
+            margin-bottom: 30px; 
+            text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(243, 207, 122, 0.1);
+        }
+
+        .romantic-text {
+            font-family: 'Great Vibes', cursive;
+            color: #f3cf7a;
+            font-size: 54px;
+            text-shadow: 0 2px 10px rgba(243, 207, 122, 0.2);
+            margin: 5px 0;
+        }
+
+        .serif-title {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 4px;
+            font-size: 16px;
+            text-transform: uppercase;
+            color: #d1d1d1;
+            opacity: 0.9;
+        }
+
+        p { font-weight: 300; line-height: 1.8; color: #e0e0e0; font-size: 16px; }
+
+        /* Kotak Dinamis Nama Tamu */
+        .guest-wrapper {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(243, 207, 122, 0.4);
+        }
+        #guest-name {
+            font-size: 26px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-top: 8px;
+            font-family: 'Playfair Display', serif;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        /* Desain Tombol */
+        .btn-gold {
+            display: inline-block;
+            padding: 12px 35px;
+            background: linear-gradient(135deg, #f3cf7a, #cf9e43);
+            color: #0b0c10;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-decoration: none;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(207, 158, 67, 0.3);
+            transition: all 0.4s ease;
+            margin-top: 15px;
+            position: relative;
+        }
+        .btn-gold:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(207, 158, 67, 0.5);
+        }
+
+        /* Pasangan Mempelai */
+        .couple-box {
+            margin: 25px 0;
+        }
+        .couple-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            color: #f3cf7a;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* Acara Card & Countdown */
+        .event-card {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1.6px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(243, 207, 122, 0.3);
+        }
+        .event-card h3 { font-family: 'Playfair Display', serif; color: #fff; margin-bottom: 10px; font-size: 18px;}
+
+        .countdown-container {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .countdown-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .countdown-item span { font-size: 22px; font-weight: 600; color: #f3cf7a; transition: all 0.3s ease; }
+        .countdown-item small { font-size: 10px; text-transform: uppercase; opacity: 0.7; }
+
+        /* Maps Wrapper */
+        .maps-wrapper {
+            margin-top: 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            height: 150px;
+        }
+
+        /* Galeri Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .gallery-grid img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.4s ease;
+        }
+        .gallery-grid img:hover {
+            transform: scale(1.05);
+            border-color: #f3cf7a;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Gift / QRIS */
+        .qris-img {
+            width: 200px;
+            border-radius: 12px;
+            margin: 20px 0 10px 0;
+            border: 4px solid white;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* ====== SISTEM ANIMASI FADE-IN ====== */
+        .fade-element {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1.2s cubic-bezier(0.215, 0.610, 0.355, 1),
+            transform 1.2s cubic-bezier(0.215, 0.610, 0.355, 1);
+        }
+        .cyan-text { color: #f3cf7a; }
+        .fade-element.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .d-1 { transition-delay: 0.1s; }
+        .d-2 { transition-delay: 0.3s; }
+        .d-3 { transition-delay: 0.5s; }
+        .d-4 { transition-delay: 0.7s; }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: #06070a;
+            font-size: 12px;
+            opacity: 0.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Responsive Mobile */
+        @media(max-width: 480px) {
+            h1 { font-size: 56px; }
+            h2 { font-size: 26px; letter-spacing: 3px; }
+            .romantic-text { font-size: 42px; }
+            .glass-card { padding: 30px 20px; }
+            .action-buttons { flex-direction: column; gap: 5px; align-items: center; }
+            .action-buttons .btn-gold { width: 80%; margin-top: 5px; }
+        }
+    </style>
+</head>
+<body class="is-locked">
+
+    <canvas id="petal-canvas"></canvas>
+
+    <audio id="backsound" src="https://www.image2url.com/r2/default/audio/1779936873459-943248a6-f3fa-40d7-95fb-069e872c98f6.mp3" loop></audio>
+
+    <div class="audio-container" id="audioBtnContainer">
+        <div class="audio-icon" onclick="toggleAudio()">🎵</div>
+    </div>
+
+    <div class="wedding-cover" id="weddingCover">
+        <div class="glass-card">
+            <div class="serif-title">The Wedding of</div>
+            <h1>Ila & Bentar</h1>
+            <p>Selasa-Rabu, 9-10 Juni 2026</p>
+            <p>Dsn. Gempolumbung Ds. Doyomulyo Kec. Kembangbahu</p>
+            <p>Lamongan</p>
+
+            <div class="guest-wrapper">
+                <p>Kepada Yth. Bapak/Ibu/Saudara/i:</p>
+                <div id="guest-name">Nama Tamu</div>
+            </div>
+
+            <button class="btn-gold" onclick="openInvitation()">Buka Undangan</button>
+        </div>
+    </div>
+
+    <section id="main-content">
+        <div class="section-bg"></div>
+        <div class="glass-card">
+            <div class="serif-title fade-element d-1">Assalamu'alaikum Wr. Wb.</div>
+            <p class="fade-element d-2" style="margin-top:15px;">Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud mengundang Bapak/Ibu/Saudara/i pada acara pernikahan kami:</p>
+
+            <div class="couple-box fade-element d-3">
+                <div class="couple-name">Lailatul Muslikhah, S.Pd</div>
+                <p>Putri dari Bapak Mustofa & Ibu Tuminah</p>
+            </div>
+
+            <div class="romantic-text fade-element d-3">&</div>
+
+            <div class="couple-box fade-element d-4">
+                <div class="couple-name">Bentar Gymnastiar Ramadhani</div>
+                <p>Putra dari Bapak H. Ngatemo & Ibu Hj. Suwatin</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-bg"></div>
+        <div class="glass-card">
+            <h2 class="fade-element d-1">Rangkaian Acara</h2>
+
+            <div class="event-card fade-element d-2">
+                <h3>Akad Nikah</h3>
+                <p><strong>Minggu, 07 Juni 2026</strong></p>
+                <p>Pukul 08.30 WIB - Selesai</p>
+                <p>Lokasi: Sambikerep - Tikung - Lamongan</p>
+            </div>
+
+            <div class="event-card fade-element d-3">
+                <h3>Resepsi Pernikahan</h3>
+                <p><strong>Rabu, 10 Juni 2026</strong></p>
+                <p>Pukul 10.00 WIB - Selesai</p>
+                <p>Lokasi: Gempolumbung - Doyomulyo - Kembangbahu - Lamongan</p>
+            </div>
+
+            <div class="countdown-container fade-element d-4">
+                <div class="countdown-item"><span id="days">0</span><small>Hari</small></div>
+                <div class="countdown-item"><span id="hours">0</span><small>Jam</small></div>
+                <div class="countdown-item"><span id="minutes">0</span><small>Min</small></div>
+                <div class="countdown-item"><span id="seconds">0</span><small>Det</small></div>
+            </div>
+
+            <a href="http://maps.google.com" target="_blank" class="btn-gold fade-element d-4" style="margin-bottom: 15px;">Buka Google Maps</a>
+
+            <div class="maps-wrapper fade-element d-4">
+                <iframe src="https://maps.google.com/maps?q=Kembangbahu%20Lamongan&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="150" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-bg"></div>
+        <div class="glass-card">
+            <h2 class="fade-element d-1">Our Gallery</h2>
+            <p class="fade-element d-1">Momen bahagia yang kami abadikan.</p>
+
+            <div class="gallery-grid fade-element d-2">
+                <a href="https://ibb.co.com/G4kJnWpT" target="_blank"><img src="https://i.ibb.co.com/LX6PYxR5/1.jpg" alt="1"></a>
+                <a href="https://ibb.co.com/B7qm1FT" target="_blank"><img src="https://i.ibb.co.com/ZwW3Z7c/2.jpg" alt="2"></a>
+                <a href="https://ibb.co.com/5H7yvtf" target="_blank"><img src="https://i.ibb.co.com/mWxwt1M/3.jpg" alt="3"></a>
+                <a href="https://ibb.co.com/v4kyKKw2" target="_blank"><img src="https://i.ibb.co.com/60F9ffn6/4.jpg" alt="4"></a>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-bg"></div>
+        <div class="glass-card">
+            <h2 class="fade-element d-1">Wedding Gift</h2>
+            <p class="fade-element d-2">Bagi Bapak/Ibu/Saudara/i yang ingin memberikan tanda kasih, dapat melalui dompet digital berikut:</p>
+
+            <div class="fade-element d-3">
+                <a href="https://ibb.co.com/qFMmYYLV" target="_blank"><img src="https://i.ibb.co.com/qFMmYYLV/qr.jpg" alt="qr" class="qris-img"></a>
+                <p><strong>A.N Lailatul Muslikhah</strong></p>
+                <p id="norek-text" style="margin-bottom: 5px;">DANA : 083869992449</p>
+
+                <div class="action-buttons">
+                    <button class="btn-gold" id="btnCopy" style="padding: 8px 18px; font-size: 12px; margin-top: 5px;" onclick="copyToClipboard('083869992449')">Salin No. DANA</button>
+                    <button class="btn-gold" id="btnScanQRIS" style="padding: 8px 18px; font-size: 12px; margin-top: 5px;" onclick="scanOrDownloadQRIS('https://i.ibb.co.com/qFMmYYLV/qr.jpg')">Scan Kode QRIS</button>
+                </div>
+            </div>
+
+            <br><hr style="opacity: 0.1;"><br>
+
+            <a href="https://wa.me/6283869992449?text=Halo%20Ila,%20Saya%20akan%20hadir%20di%20pernikahan%20kalian." target="_blank" class="btn-gold fade-element d-4">Konfirmasi Kehadiran (Rsvp)</a>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-bg"></div>
+        <div class="glass-card">
+            <h2 class="fade-element d-1">Terima Kasih</h2>
+            <p class="fade-element d-2" style="margin-bottom: 20px;">Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu kepada kami.</p>
+            <p class="fade-element d-3">Wassalamu'alaikum Wr. Wb.</p>
+
+            <h1 class="fade-element d-4" style="margin-top: 30px;">Ila & Bentar</h1>
+        </div>
+    </section>
+
+    <footer>
+        © 2026 Ila & Bentar Wedding. All Rights Reserved. editor by: AxZYYY
+    </footer>
+
+    <script>
+        /* 1. PARSING PARAMETER ?to= DI URL */
+        const urlParams = new URLSearchParams(window.location.search);
+        const guestName = urlParams.get('to');
+        const guestElement = document.getElementById('guest-name');
+
+        if (guestName) {
+            guestElement.innerText = decodeURIComponent(guestName);
+        } else {
+            guestElement.innerText = "Tamu Undangan";
+        }
+
+        /* 2. LOGIC BUKA UNDANGAN & FADE-IN MUSIC AUDIO */
+        const myAudio = document.getElementById('backsound');
+        const audioBtnContainer = document.getElementById('audioBtnContainer');
+
+        function openInvitation() {
+            document.body.classList.remove('is-locked');
+            document.getElementById('weddingCover').classList.add('opened');
+            audioBtnContainer.style.display = 'block';
+
+            // Efek Suara Fade In Halus
+            myAudio.volume = 0;
+            myAudio.play().then(() => {
+                let vol = 0;
+                const fadeInterval = setInterval(() => {
+                    if (vol < 0.8) {
+                        vol += 0.05;
+                        myAudio.volume = vol;
+                    } else {
+                        clearInterval(fadeInterval);
+                    }
+                }, 100);
+            }).catch(function(error) {
+                console.log("Autoplay musik dicegah browser.");
+            });
+
+            document.getElementById('main-content').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleAudio() {
+            if (myAudio.paused) {
+                myAudio.play();
+                document.querySelector('.audio-icon').innerText = "🎵";
+            } else {
+                myAudio.pause();
+                document.querySelector('.audio-icon').innerText = "🔇";
+            }
+        }
+
+        /* 3. PREMIUM COPY TO CLIPBOARD FEEDBACK */
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btnCopy');
+                const oldText = btn.innerText;
+                btn.innerText = "Tersalin! ✓";
+                btn.style.background = "linear-gradient(135deg, #a3e635, #65a30d)";
+                setTimeout(() => {
+                    btn.innerText = oldText;
+                    btn.style.background = "";
+                }, 2000);
+            }).catch(err => {
+                console.error('Gagal menyalin text: ', err);
+            });
+        }
+
+        /* Fungsi Baru: Scan atau Simpan QRIS secara Dinamis */
+        function scanOrDownloadQRIS(imgUrl) {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const btn = document.getElementById('btnScanQRIS');
+
+            if (isMobile) {
+                const link = document.createElement('a');
+                link.href = imgUrl;
+                link.download = 'QRIS_Ila_Bentar.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                const oldText = btn.innerText;
+                btn.innerText = "QRIS Tersimpan! ✓";
+                btn.style.background = "linear-gradient(135deg, #a3e635, #65a30d)";
+                setTimeout(() => {
+                    btn.innerText = oldText;
+                    btn.style.background = "";
+                }, 2000);
+            } else {
+                window.open(imgUrl, '_blank');
+            }
+        }
+
+        /* 4. REALTIME COUNTDOWN ACARA */
+        const targetTime = new Date("June 10, 2026 10:00:00").getTime();
+
+        setInterval(() => {
+            const currentTime = new Date().getTime();
+            const difference = targetTime - currentTime;
+
+            const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((difference % (1000 * 60)) / 1000);
+
+            document.getElementById("days").innerText = d > 0 ? d : 0;
+            document.getElementById("hours").innerText = h > 0 ? h : 0;
+            document.getElementById("minutes").innerText = m > 0 ? m : 0;
+            document.getElementById("seconds").innerText = s > 0 ? s : 0;
+        }, 1000);
+
+        /* 5. INTERSECTION OBSERVER ANIMASI SCROLL MULTI-ELEMENT */
+        const observerOptions = {
+            root: null,
+            threshold: 0.1
+        };
+
+        const scrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                } else {
+                    entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-element').forEach(element => {
+            scrollObserver.observe(element);
+        });
+
+        /* 6. CANVAS SCRIPT: KELOPAK BUNGA BERGUGURAN (FALLING PETALS) */
+        const canvas = document.getElementById('petal-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const numPetals = 25;
+        const petals = [];
+
+        class Petal {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height - height;
+                this.r = Math.random() * 4 + 2;
+                this.d = Math.random() * numPetals;
+                this.w = Math.random() * 2 - 1;
+                this.wy = Math.random() * 1 + 1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);
+                ctx.fillStyle = "rgba(243, 207, 122, 0.3)";
+                ctx.fill();
+            }
+            update() {
+                this.y += this.wy;
+                this.x += this.w;
+                if (this.y > height) {
+                    this.y = -10;
+                    this.x = Math.random() * width;
+                }
+            }
+        }
+
+        for (let i = 0; i < numPetals; i++) {
+            petals.push(new Petal());
+        }
+
+        function animatePetals() {
+            ctx.clearRect(0, 0, width, height);
+            petals.forEach(petal => {
+                petal.draw();
+                petal.update();
+            });
+            requestAnimationFrame(animatePetals);
+        }
+        animatePetals();
+    </script>
+</body>
+</html>
